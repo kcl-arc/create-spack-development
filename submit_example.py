@@ -71,7 +71,11 @@ def infer_arch_from_host():
 def main():
     parser = argparse.ArgumentParser(description="Submit spack jobs from package_installs/<pkg>.yaml")
     parser.add_argument("--outputs-dir", required=True, help="Outputs dir created by setup.py")
-    parser.add_argument("--repo-dir", default=None, help="Repo inputs dir (defaults to this script's directory)")
+    parser.add_argument(
+        "--repo-dir",
+        default=None,
+        help="Repo inputs dir (defaults to <submit_example.py_dir>/../er-spack-packages)",
+    )
     parser.add_argument("--package", required=True, help="Package name, matching package_installs/<package>.yaml")
     parser.add_argument("--version", default=None, help="Package version key from the YAML (if omitted, inferred when unique)")
     parser.add_argument("--arch", default=None, help="Target arch: zen2 or zen4 (if omitted, inferred from host)")
@@ -87,7 +91,8 @@ def main():
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_dir = os.path.abspath(args.repo_dir) if args.repo_dir else script_dir
+    default_repo_dir = os.path.abspath(os.path.join(script_dir, "..", "er-spack-packages"))
+    repo_dir = os.path.abspath(args.repo_dir) if args.repo_dir else default_repo_dir
 
     outputs_dir = os.path.abspath(os.path.expanduser(args.outputs_dir))
     build_results_dir = os.path.join(outputs_dir, "build_results")

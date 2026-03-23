@@ -28,21 +28,7 @@ User-cloneable Spack 1.1.1 environment for creating personal builds. Uses the Si
    ./setup.py --outputs-dir /scratch/prj/my_prj/spackaging/my_outputs
    ```
 
-4. **Set environment**:
-   ```bash
-   export SPACK_USER_CONFIG_PATH=$HOME/.spack_er_kcl_v1_1_1
-   ```
-
-4. **Interactive install** (use `srun` for interactive session):
-   ```bash
-   singularity exec --bind /scratch/prj/my_prj/spackaging/er-spack-development:/scratch/prj/my_prj/spackaging/er-spack-development \
-     --bind /scratch/prj/my_prj/spackaging/my_outputs:/scratch/prj/my_prj/spackaging/my_outputs \
-     --bind $HOME:$HOME \
-     /software/containers/singularity/spack/spack_v1_1_1.sif \
-     /opt/spack/bin/spack install zlib@1.3
-   ```
-
-5. **Batch submit** (example):
+4. **Batch submit** (example):
    ```bash
    ./submit_example.py --outputs-dir /scratch/prj/my_prj/spackaging/my_outputs \
      --package zlib
@@ -102,3 +88,19 @@ Use `git checkout staging` or `git checkout production` in your `--repo-dir` clo
 `git checkout -b new_branch` to develop a new package before making an MR to staging.
 
 See https://github.com/kcl-eresearch/er-spack-packages for example formats and layout of the `--repo-dir`
+
+## Interactively submit
+
+1. **Set environment**:
+   ```bash
+   export SPACK_USER_CONFIG_PATH=$HOME/.spack_er_kcl_v1_1_1
+   ```
+
+2. **Interactive install** (use `srun` for interactive session):
+   ```bash
+   singularity exec --bind /scratch/prj/my_prj/spackaging/er-spack-development:/scratch/prj/my_prj/spackaging/er-spack-development \
+     --bind /scratch/prj/my_prj/spackaging/my_outputs:/scratch/prj/my_prj/spackaging/my_outputs \
+     --bind $HOME:$HOME \
+     /software/containers/singularity/spack/spack_v1_1_1.sif \
+     /opt/spack/bin/spack install zlib@1.3
+   ```

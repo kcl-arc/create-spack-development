@@ -11,6 +11,7 @@ sleep $((RANDOM % 60))
 {% set spack_cmd = spack_in_container | default("/opt/spack/bin/spack") %}
 
 COMPILER_LIST="$(singularity exec \
+  --bind {{ framework_dir }}:{{ framework_dir }} \
   --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
   --bind {{ repo_dir }}:{{ repo_dir }} \
   --bind {{ outputs_dir }}:{{ outputs_dir }} \
@@ -18,6 +19,7 @@ COMPILER_LIST="$(singularity exec \
 if [[ -z "${COMPILER_LIST// /}" ]]
 then
   singularity exec \
+    --bind {{ framework_dir }}:{{ framework_dir }} \
     --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
     --bind {{ repo_dir }}:{{ repo_dir }} \
     --bind {{ outputs_dir }}:{{ outputs_dir }} \
@@ -25,6 +27,7 @@ then
 fi
 
 singularity exec \
+  --bind {{ framework_dir }}:{{ framework_dir }} \
   --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
   --bind {{ repo_dir }}:{{ repo_dir }} \
   --bind {{ outputs_dir }}:{{ outputs_dir }} \

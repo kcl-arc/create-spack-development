@@ -183,6 +183,7 @@ def main():
                 "arch": host_arch,
                 "flags": full_flags,
                 "repo_dir": repo_dir,
+                "framework_dir": script_dir,
                 "outputs_dir": outputs_dir,
                 "spack_user_config_path": spack_config_dir,
                 "build_name": build_name,

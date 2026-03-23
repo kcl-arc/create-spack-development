@@ -79,6 +79,10 @@ def main():
     if not os.path.isdir(template_dir):
         print(f"Error: template dir not found: {template_dir}", file=sys.stderr)
         sys.exit(1)
+    packages_yaml_source = os.path.join(script_dir, "config", "packages.yaml")
+    if not os.path.isfile(packages_yaml_source):
+        print(f"Error: packages.yaml not found: {packages_yaml_source}", file=sys.stderr)
+        sys.exit(1)
 
     outputs_dir = os.path.abspath(os.path.expanduser(args.outputs_dir))
     os.makedirs(outputs_dir, exist_ok=True)
@@ -136,19 +140,26 @@ def main():
             f.write(tpl.render(**ctx))
         print(f"Wrote {out_path}")
 
+    packages_yaml_dest = os.path.join(spack_config_dir, "packages.yaml")
+    if os.path.lexists(packages_yaml_dest):
+        os.remove(packages_yaml_dest)
+    os.symlink(packages_yaml_source, packages_yaml_dest)
+    print(f"Linked {packages_yaml_dest} -> {packages_yaml_source}")
+
     print()
     print(MODE_MESSAGES[args.mode])
     print("Environment:")
     print(f"  export SPACK_USER_CONFIG_PATH={spack_config_dir}")
     print()
     print("Bind mounts for singularity exec:")
+    print(f"  --bind {script_dir}:{script_dir}  (for er-spack-development config/packages.yaml symlink target)")
     print(f"  --bind {repo_dir}:{repo_dir}  (for local_packages + package_installs)")
     print(f"  --bind {outputs_dir}:{outputs_dir}  (for install/, source_cache/, build_results/)")
     print(f"  --bind {spack_config_dir}:{spack_config_dir}  (for config in SPACK_USER_CONFIG_PATH)")
     print()
     print("Interactive install:")
     print(
-        f"  singularity exec --bind {repo_dir}:{repo_dir} --bind {outputs_dir}:{outputs_dir} "
+        f"  singularity exec --bind {script_dir}:{script_dir} --bind {repo_dir}:{repo_dir} --bind {outputs_dir}:{outputs_dir} "
         f"--bind {spack_config_dir}:{spack_config_dir} {args.sif_path} /opt/spack/bin/spack install <spec>"
     )
     print()

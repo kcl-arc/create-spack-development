@@ -148,7 +148,7 @@ def main():
         if gres_line not in slurm_args:
             slurm_args = slurm_args.rstrip() + "\n" + gres_line + "\n"
 
-    job_template_path = os.path.join(repo_dir, "slurm_job.j2")
+    job_template_path = os.path.join(script_dir, "slurm_job.j2")
     with open(job_template_path) as fh:
         tpl = jinja2.Template(fh.read())
 

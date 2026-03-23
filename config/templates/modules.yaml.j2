@@ -1,0 +1,20 @@
+# Module roots at install_prefix/modules
+modules:
+  prefix_inspections:
+    bin: [PATH]
+    man: [MANPATH]
+    share/man: [MANPATH]
+    lib/pkgconfig: [PKG_CONFIG_PATH]
+    lib64/pkgconfig: [PKG_CONFIG_PATH]
+    include: [C_INCLUDE_PATH, CPLUS_INCLUDE_PATH]
+    lib: [LIBRARY_PATH]
+    lib64: [LIBRARY_PATH]
+  default:
+    enable: [tcl]
+    roots:
+      tcl: {{ install_prefix }}/modules
+    tcl:
+      all:
+        autoload: direct
+      hash_length: 0
+      naming_scheme: '{name}/{version}-{compiler.name}-{compiler.version}'

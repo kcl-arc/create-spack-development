@@ -1,0 +1,6 @@
+# local_packages first (custom packages take precedence); builtin from spack-packages git
+# Spack 1.1.1+ uses https://github.com/spack/spack-packages for community packages
+repos:
+  local_packages: {{ local_packages_path }}
+  builtin:
+    git: https://github.com/spack/spack-packages.git

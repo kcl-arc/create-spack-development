@@ -1,0 +1,36 @@
+# Spack config for user/cloneable spack_er_kcl_v1_1_1
+# install_prefix, source_cache_path from setup script
+config:
+  install_tree:
+    root: {{ install_prefix }}/apps
+    projections:
+      all: "{architecture}/{compiler.name}-{compiler.version}/{name}-{version}-{hash}"
+
+  template_dirs:
+    - {{ install_prefix }}
+
+  build_stage:
+    - $tempdir/$user/spack-stage
+    - $user_cache_path/stage
+
+  test_stage: $user_cache_path/test
+  source_cache: {{ source_cache_path }}
+  misc_cache: $user_cache_path/cache
+  connect_timeout: 10
+  verify_ssl: true
+  suppress_gpg_warnings: false
+  install_missing_compilers: false
+  checksum: true
+  deprecated: false
+  dirty: false
+  build_language: C
+  locks: true
+  url_fetch_method: urllib
+  ccache: false
+  concretizer: clingo
+  db_lock_timeout: 3
+  package_lock_timeout: null
+  shared_linking:
+    type: rpath
+    bind: false
+  allow_sgid: true

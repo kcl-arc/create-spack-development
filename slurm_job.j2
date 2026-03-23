@@ -1,0 +1,48 @@
+#!/bin/bash
+
+#SBATCH --partition={{ partition }}
+{{ slurm_args }}
+
+export SPACK_USER_CONFIG_PATH={{ spack_user_config_path }}
+export SPACK_CONFIG_LOCK_TIMEOUT=300
+sleep $((RANDOM % 60))
+
+{% set sif = sif_path | default("/software/containers/singularity/spack/spack_v1_1_1.sif") %}
+{% set spack_cmd = spack_in_container | default("/opt/spack/bin/spack") %}
+
+COMPILER_LIST="$(singularity exec \
+  --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+  --bind {{ repo_dir }}:{{ repo_dir }} \
+  --bind {{ outputs_dir }}:{{ outputs_dir }} \
+  {{ sif }} {{ spack_cmd }} compiler list 2>/dev/null || true)"
+if [[ -z "${COMPILER_LIST// /}" ]]
+then
+  singularity exec \
+    --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+    --bind {{ repo_dir }}:{{ repo_dir }} \
+    --bind {{ outputs_dir }}:{{ outputs_dir }} \
+    {{ sif }} {{ spack_cmd }} compiler find
+fi
+
+singularity exec \
+  --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+  --bind {{ repo_dir }}:{{ repo_dir }} \
+  --bind {{ outputs_dir }}:{{ outputs_dir }} \
+  {{ sif }} {{ spack_cmd }} install --deprecated --yes-to-all --overwrite {{ package }}@{{ version }} target={{ arch }} {{ flags }}
+
+RESULT="$?"
+
+{% if build_results_dir is defined and build_results_dir %}
+cat << EOF > "{{ build_results_dir }}/{{ build_name }}.yaml"
+---
+build_name: "{{ build_name }}"
+package: "{{ package }}"
+version: "{{ version }}"
+arch: "{{ arch }}"
+flags: "{{ flags }}"
+end_time: "$(/usr/bin/date '+%Y-%m-%d %H:%M:%S')"
+job_id: ${SLURM_JOB_ID}
+result: ${RESULT}
+output_file: "{{ output_file }}"
+EOF
+{% endif %}

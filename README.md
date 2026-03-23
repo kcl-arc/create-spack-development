@@ -8,29 +8,28 @@ User-cloneable Spack 1.1.1 environment for creating personal builds. Uses the Si
 
 - Python 3 with jinja2 (`pip install jinja2`)
 - pyyaml (`pip install pyyaml`) for `submit_example.py`
-- Singularity/Apptainer client on your machine/host where you run the commands
 
 ## Quick start
 
-1. **Clone** (or copy) this repo to your project location, e.g.:
+1. **Clone** (or copy) this repo to a project location, e.g.:
    ```bash
    git clone <repo-url> /scratch/prj/my_prj/spackaging/er-spack-development
    ```
 
 2. **Create outputs dir** (separate from the repo inputs):
    ```bash
-   mkdir -p /scratch/prj/my_prj/spackaging/my_outputs
+   mkdir -p /scratch/prj/my_prj/spackaging/spackages
    ```
 
 3. **Run setup** (writes config to `$HOME/.spack_er_kcl_v1_1_1` by default):
    ```bash
    cd /scratch/prj/my_prj/spackaging/er-spack-development
-   ./setup.py --outputs-dir /scratch/prj/my_prj/spackaging/my_outputs
+   ./setup.py --outputs-dir /scratch/prj/my_prj/spackaging/spackages
    ```
 
 4. **Batch submit** (example):
    ```bash
-   ./submit_example.py --outputs-dir /scratch/prj/my_prj/spackaging/my_outputs \
+   ./submit_example.py --outputs-dir /scratch/prj/my_prj/spackaging/spackages \
      --package zlib
    ```
 
@@ -78,7 +77,7 @@ You can clone this repo, rename it, and push to your own GitHub/GitLab. `setup.p
 
 ## Branch mapping for repo inputs
 
-When `--repo-dir` points to an `er-spack-packages` checkout:
+In the future is is expected that when `--repo-dir` points to an `er-spack-packages` checkout:
 
 - `staging` branch maps to `v1_1_test`
 - `production` branch maps to `v1_1_prod`
@@ -99,7 +98,7 @@ See https://github.com/kcl-eresearch/er-spack-packages for example formats and l
 2. **Interactive install** (use `srun` for interactive session):
    ```bash
    singularity exec --bind /scratch/prj/my_prj/spackaging/er-spack-development:/scratch/prj/my_prj/spackaging/er-spack-development \
-     --bind /scratch/prj/my_prj/spackaging/my_outputs:/scratch/prj/my_prj/spackaging/my_outputs \
+     --bind /scratch/prj/my_prj/spackaging/spackages:/scratch/prj/my_prj/spackaging/spackages \
      --bind $HOME:$HOME \
      /software/containers/singularity/spack/spack_v1_1_1.sif \
      /opt/spack/bin/spack install zlib@1.3

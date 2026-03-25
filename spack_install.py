@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Submit helper for er-spack-development.
+Spack install submit helper for er-spack-development.
 
 Reads package_installs/<package>.yaml and submits one or more Slurm jobs
 based on versions + flags defined there.
@@ -68,13 +68,49 @@ def infer_arch_from_host():
     )
 
 
+def infer_environment_name(environment_root, explicit_environment_name):
+    if explicit_environment_name:
+        return explicit_environment_name
+
+    if not os.path.isdir(environment_root):
+        return ""
+
+    env_names = [
+        e
+        for e in os.listdir(environment_root)
+        if os.path.isdir(os.path.join(environment_root, e)) and not e.startswith(".")
+    ]
+    if len(env_names) == 1:
+        return env_names[0]
+    if len(env_names) == 0:
+        return ""
+
+    raise SystemExit(
+        f"Multiple Spack environment(s) found under {environment_root}: {', '.join(sorted(env_names))}. "
+        "Pass --environment-name to select one."
+    )
+
+
+def load_setup_state(parent_dir):
+    state_path = os.path.join(parent_dir, "setup_state.yaml")
+    if not os.path.isfile(state_path):
+        return {}
+    data = _load_yaml(state_path) or {}
+    setup = data.get("setup")
+    return setup if isinstance(setup, dict) else {}
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Submit spack jobs from package_installs/<pkg>.yaml")
-    parser.add_argument("--outputs-dir", required=True, help="Outputs dir created by setup.py")
+    parser = argparse.ArgumentParser(description="Submit spack install jobs from package_installs/<pkg>.yaml")
+    parser.add_argument(
+        "--outputs-dir",
+        default=None,
+        help="Outputs dir created by setup.py (default: <repo_parent>/spackages, or setup_state.yaml value)",
+    )
     parser.add_argument(
         "--repo-dir",
         default=None,
-        help="Repo inputs dir (defaults to <submit_example.py_dir>/../er-spack-packages)",
+        help="Repo inputs dir (defaults to <spack_install.py_dir>/../er-spack-packages)",
     )
     parser.add_argument("--package", required=True, help="Package name, matching package_installs/<package>.yaml")
     parser.add_argument("--version", default=None, help="Package version key from the YAML (if omitted, inferred when unique)")
@@ -83,27 +119,54 @@ def main():
     parser.add_argument("--slurm-args", default=DEFAULT_SLURM_ARGS, help="Base SBATCH directives")
     parser.add_argument("--sif-path", default=DEFAULT_SIF, help="SIF image path")
     parser.add_argument(
+        "--spack-config-home",
+        default=None,
+        help="SPACK_USER_CONFIG_PATH (default inferred or $HOME/.spack_er_kcl_v1_1_1)",
+    )
+    parser.add_argument(
         "--spack-config-dir",
         default=None,
-        help="SPACK_USER_CONFIG_PATH (default: $HOME/.spack_er_kcl_v1_1_1)",
+        help="Alias for --spack-config-home (kept for compatibility)",
+    )
+    parser.add_argument(
+        "--environment-name",
+        default=None,
+        help="Spack environment name under outputs-dir/environments/ (default: auto-detect if exactly one exists)",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print job script(s), do not sbatch")
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.abspath(os.path.join(script_dir, ".."))
+    default_outputs_dir = os.path.join(parent_dir, "spackages")
+    setup_state = load_setup_state(parent_dir)
     default_repo_dir = os.path.abspath(os.path.join(script_dir, "..", "er-spack-packages"))
     repo_dir = os.path.abspath(args.repo_dir) if args.repo_dir else default_repo_dir
 
-    outputs_dir = os.path.abspath(os.path.expanduser(args.outputs_dir))
+    outputs_dir_from_state = setup_state.get("outputs_dir")
+    outputs_dir_arg = args.outputs_dir or outputs_dir_from_state or default_outputs_dir
+    outputs_dir = os.path.abspath(os.path.expanduser(outputs_dir_arg))
+    environment_root = os.path.join(outputs_dir, "environments")
     build_results_dir = os.path.join(outputs_dir, "build_results")
     os.makedirs(build_results_dir, exist_ok=True)
 
     home = os.path.expanduser("~")
-    spack_config_dir = (
-        os.path.abspath(os.path.expanduser(args.spack_config_dir))
-        if args.spack_config_dir
-        else os.path.join(home, DEFAULT_SPACK_CONFIG_HOME)
-    )
+    if args.environment_name is not None:
+        environment_name = infer_environment_name(environment_root, args.environment_name)
+    elif setup_state.get("use_spack_environment") is False:
+        environment_name = ""
+    else:
+        environment_name = infer_environment_name(environment_root, setup_state.get("environment_name"))
+
+    spack_config_home_arg = args.spack_config_home or args.spack_config_dir
+    if spack_config_home_arg:
+        spack_config_home_arg = os.path.expanduser(spack_config_home_arg)
+        if os.path.isabs(spack_config_home_arg):
+            spack_config_dir = os.path.abspath(spack_config_home_arg)
+        else:
+            spack_config_dir = os.path.abspath(os.path.join(home, spack_config_home_arg))
+    else:
+        spack_config_dir = setup_state.get("spack_user_config_path") or os.path.join(home, DEFAULT_SPACK_CONFIG_HOME)
 
     pkg_yaml = os.path.join(repo_dir, "package_installs", f"{args.package}.yaml")
     if not os.path.exists(pkg_yaml):
@@ -186,6 +249,7 @@ def main():
                 "framework_dir": script_dir,
                 "outputs_dir": outputs_dir,
                 "spack_user_config_path": spack_config_dir,
+                "spack_environment_name": environment_name,
                 "build_name": build_name,
                 "build_results_dir": build_results_dir,
                 "output_file": output_file,

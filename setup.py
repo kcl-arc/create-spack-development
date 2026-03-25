@@ -12,6 +12,7 @@ This is intended for non-privileged testing with the Singularity image.
 import argparse
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -26,6 +27,10 @@ DEFAULT_SPACK_VERSION = "1.1.1"
 DEFAULT_SPACK_CONFIG_HOME_PREFIX = ".spack_er_kcl_v"
 
 SPACK_IN_CONTAINER = "/opt/spack/bin/spack"
+
+# Match spack_install.py defaults for Slurm jobs that need Singularity on compute nodes.
+DEFAULT_ENV_CREATE_PARTITION = "interruptible_cpu"
+DEFAULT_ENV_CREATE_SLURM_ARGS = "#SBATCH --ntasks=4\n#SBATCH --mem-per-cpu=4096"
 
 MODE_MESSAGES = {
     "test": (
@@ -138,6 +143,31 @@ def main():
         default="false",
         help="Spack concretizer reuse (default: false)",
     )
+    parser.add_argument(
+        "--env-create-partition",
+        default=DEFAULT_ENV_CREATE_PARTITION,
+        help="Slurm partition for the env-create job (Singularity runs on compute nodes only).",
+    )
+    parser.add_argument(
+        "--env-create-slurm-args",
+        default=DEFAULT_ENV_CREATE_SLURM_ARGS,
+        help="Extra #SBATCH lines for the env-create job (default matches spack_install.py).",
+    )
+    parser.add_argument(
+        "--env-create-constraint",
+        default=None,
+        help="Optional Slurm --constraint for sbatch (e.g. zen2).",
+    )
+    parser.add_argument(
+        "--env-create-no-submit",
+        action="store_true",
+        help="Write the env-create Slurm script under build_results/ but do not run sbatch.",
+    )
+    parser.add_argument(
+        "--env-create-no-wait",
+        action="store_true",
+        help="If submitting, do not pass sbatch --wait (return immediately after queueing).",
+    )
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -247,31 +277,75 @@ def main():
     os.symlink(packages_yaml_source, packages_yaml_dest)
     print(f"Linked {packages_yaml_dest} -> {packages_yaml_source}")
 
-    # Create the Spack environment if requested.
+    # Create the Spack environment if requested (via Slurm: Singularity is not available on login nodes).
     if environment_name:
         env_dir = os.path.join(environment_root, environment_name)
         env_spack_yaml = os.path.join(env_dir, "spack.yaml")
         if os.path.isfile(env_spack_yaml):
             print(f"Spack environment already exists: {env_spack_yaml}")
         else:
-            cmd = [
-                "singularity",
-                "exec",
-                "--bind",
-                f"{script_dir}:{script_dir}",
-                "--bind",
-                f"{repo_dir}:{repo_dir}",
-                "--bind",
-                f"{outputs_dir}:{outputs_dir}",
-                "--bind",
-                f"{spack_config_dir}:{spack_config_dir}",
-                sif_path,
-                "sh",
-                "-c",
-                f"export SPACK_USER_CONFIG_PATH='{spack_config_dir}'; {SPACK_IN_CONTAINER} env create '{environment_name}'",
-            ]
-            print("Creating Spack environment inside container...")
-            subprocess.run(cmd, check=True)
+            env_tpl_path = os.path.join(script_dir, "slurm_env_create.j2")
+            if not os.path.isfile(env_tpl_path):
+                print(f"Error: missing template: {env_tpl_path}", file=sys.stderr)
+                sys.exit(1)
+
+            safe_name = re.sub(r"[^a-zA-Z0-9_.-]+", "_", environment_name).strip("_") or "env"
+            job_script_path = os.path.join(build_results_path, f"spack_env_create_{safe_name}.sh")
+            job_log_path = os.path.join(build_results_path, f"spack_env_create_{safe_name}.out")
+
+            env_job_env = jinja2.Environment(
+                loader=jinja2.FileSystemLoader(script_dir),
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
+            env_job_tpl = env_job_env.get_template("slurm_env_create.j2")
+            job_body = env_job_tpl.render(
+                partition=args.env_create_partition,
+                slurm_args=args.env_create_slurm_args,
+                framework_dir=script_dir,
+                spack_user_config_path=spack_config_dir,
+                repo_dir=repo_dir,
+                outputs_dir=outputs_dir,
+                sif_path=sif_path,
+                spack_in_container=SPACK_IN_CONTAINER,
+                environment_name_shell=shlex.quote(environment_name),
+            )
+            with open(job_script_path, "w") as fh:
+                fh.write(job_body)
+            print(f"Wrote env-create Slurm script: {job_script_path}")
+
+            if args.env_create_no_submit:
+                print(
+                    "Not submitting (--env-create-no-submit). With sbatch available, run e.g.:\n"
+                    f"  sbatch --wait --output {job_log_path} {job_script_path}"
+                )
+            else:
+                sbatch_cmd = [
+                    "sbatch",
+                    "--parsable",
+                    "--output",
+                    job_log_path,
+                ]
+                if not args.env_create_no_wait:
+                    sbatch_cmd.append("--wait")
+                if args.env_create_constraint:
+                    sbatch_cmd.extend(["--constraint", args.env_create_constraint])
+                sbatch_cmd.append(job_script_path)
+                print("Submitting env-create job to Slurm (Singularity runs on compute nodes)...")
+                subprocess.run(sbatch_cmd, check=True)
+                if args.env_create_no_wait:
+                    print(
+                        "Env-create job was queued; the Spack environment will appear when the job finishes. "
+                        f"Check {job_log_path}"
+                    )
+                else:
+                    if not os.path.isfile(env_spack_yaml):
+                        print(
+                            f"Warning: expected {env_spack_yaml} after the env-create job; check {job_log_path}",
+                            file=sys.stderr,
+                        )
+                    else:
+                        print(f"Spack environment created under {env_dir}")
 
     # Generate instructions.md from a template in the repo root.
     instructions_template_path = os.path.join(script_dir, "instructions.md.j2")

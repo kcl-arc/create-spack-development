@@ -1,6 +1,6 @@
 # er-spack-development
 
-User-cloneable Spack 1.1.1 environment for creating personal builds. Uses the Singularity container at `/software/containers/singularity/spack/spack_v1_1_1.sif`.
+User-cloneable Spack environment for creating personal builds or developing environments. Uses the Singularity container at `/software/containers/singularity/spack/spack_v1_1_1.sif` as default, others can be specified.
 
 - **Personal builds**: Maintain your own Spack package recipes and builds on the HPC
 
@@ -74,6 +74,8 @@ The following keys are expected but not interpreted specially by this repo:
 - `--environment-name NAME` (optional): If set (non-blank), `setup.py` creates and uses a Spack environment under `<outputs_dir>/environments/`.
 - `--mode test|development`: Affects the message printed at end (default: development)
 - `--reuse true|false`: Spack concretizer reuse (default: false)
+
+When `--environment-name` is set and the environment does not yet exist, `setup.py` submits a **Slurm** job (default `sbatch --wait`) using `slurm_env_create.j2`, because Singularity is not available on login nodes. Defaults should be sufficient, options are: `--env-create-partition`, `--env-create-slurm-args`, `--env-create-constraint`, `--env-create-no-submit`, `--env-create-no-wait`.
 
 `setup.py` writes `setup_state.yaml` in the parent directory of this repo. `spack_install.py` uses it to pick defaults for outputs path, `SPACK_USER_CONFIG_PATH`, and environment selection.
 

@@ -5,6 +5,7 @@ User-cloneable Spack environment for creating personal builds or developing envi
 A Singularity definition file is included in the root of this repository.
 
 - **Personal builds**: Maintain your own Spack package recipes and builds on the HPC
+- **Environments**: Use the environment created by setup to create a named Spack environment that can be, e.g. containerised.
 
 ## Prerequisites
 

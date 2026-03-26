@@ -1,6 +1,8 @@
 # er-spack-development
 
-User-cloneable Spack environment for creating personal builds or developing environments. Uses the Singularity container at `/software/containers/singularity/spack/spack_v1_1_1.sif` as default, others can be specified.
+User-cloneable Spack environment for creating personal builds or developing environments. Uses a Singularity container at `/software/containers/singularity/spack/spack_v1_1_1.sif` as default, others can be specified during setup.
+
+A Singularity definition file is included in the root of this repository.
 
 - **Personal builds**: Maintain your own Spack package recipes and builds on the HPC
 
@@ -111,3 +113,9 @@ See https://github.com/kcl-eresearch/er-spack-packages for example formats and l
      /software/containers/singularity/spack/spack_v1_1_1.sif \
      /opt/spack/bin/spack -e <environment_name> install zlib@1.3
    ```
+
+## Modules
+
+This setup will install tcl modules in `{{ install_prefix }}/modules/<OS-arch>`
+
+To make the modules available to be loaded, set the environment variable `MODULEPATH`

@@ -26,12 +26,21 @@ then
     {{ sif }} {{ spack_cmd }} compiler find
 fi
 
+{% if spack_environment_name %}
 singularity exec \
   --bind {{ framework_dir }}:{{ framework_dir }} \
   --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
   --bind {{ repo_dir }}:{{ repo_dir }} \
   --bind {{ outputs_dir }}:{{ outputs_dir }} \
-  {{ sif }} {{ spack_cmd }} install --deprecated --yes-to-all --overwrite {{ package }}@{{ version }} target={{ arch }} {{ flags }}
+  {{ sif }} {{ spack_cmd }} -e {{ spack_environment_name }} env status
+{% endif %}
+
+singularity exec \
+  --bind {{ framework_dir }}:{{ framework_dir }} \
+  --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+  --bind {{ repo_dir }}:{{ repo_dir }} \
+  --bind {{ outputs_dir }}:{{ outputs_dir }} \
+  {{ sif }} {{ spack_cmd }}{% if spack_environment_name %} -e {{ spack_environment_name }}{% endif %} install --deprecated --yes-to-all --overwrite {{ package }}@{{ version }} target={{ arch }} {{ flags }}
 
 RESULT="$?"
 

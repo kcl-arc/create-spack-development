@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+# Spack 1.1.1 container for HPC build jobs.
+# Build: singularity build spack_v1_1_1.sif spack_v1_1_1.def
+
+%environment
+  export SPACK_ROOT=/opt/spack
+  export PATH="${SPACK_ROOT}/bin:${PATH}"
+
+%post
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update && upgrade -y
+  apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    file \
+    gfortran \
+    git \
+    python3 \
+    python3-pip \
+    unzip
+
+  git clone --depth 1 --branch v1.1.1 https://github.com/spack/spack.git /opt/spack
+  . /opt/spack/share/spack/setup-env.sh
+
+%labels
+  Spack 1.1.1 on Ubuntu 22.04

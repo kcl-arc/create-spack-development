@@ -112,11 +112,6 @@ def main():
         help="Per-user Spack config home (default derived from --spack-version, e.g. $HOME/.spack_er_kcl_v1_1_1).",
     )
     parser.add_argument(
-        "--spack-config-dir",
-        default=None,
-        help="Alias for --spack-config-home (kept for compatibility).",
-    )
-    parser.add_argument(
         "--spack-version",
         default=None,
         help="Spack version tag to use (default: 1.1.1). Used mainly for config-home naming.",
@@ -205,7 +200,7 @@ def main():
     default_spack_config_home_basename = spack_version_to_spack_config_home_basename(spack_version)
     default_spack_config_home_abs = os.path.join(home, default_spack_config_home_basename)
 
-    spack_config_home_arg = args.spack_config_home or args.spack_config_dir
+    spack_config_home_arg = args.spack_config_home
     if spack_config_home_arg is None:
         spack_config_dir = _prompt_path("Spack config home", default_spack_config_home_abs, home)
     else:

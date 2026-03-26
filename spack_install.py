@@ -124,11 +124,6 @@ def main():
         help="SPACK_USER_CONFIG_PATH (default inferred or $HOME/.spack_er_kcl_v1_1_1)",
     )
     parser.add_argument(
-        "--spack-config-dir",
-        default=None,
-        help="Alias for --spack-config-home (kept for compatibility)",
-    )
-    parser.add_argument(
         "--environment-name",
         default=None,
         help="Spack environment name under outputs-dir/environments/ (default: auto-detect if exactly one exists)",
@@ -158,7 +153,7 @@ def main():
     else:
         environment_name = infer_environment_name(environment_root, setup_state.get("environment_name"))
 
-    spack_config_home_arg = args.spack_config_home or args.spack_config_dir
+    spack_config_home_arg = args.spack_config_home
     if spack_config_home_arg:
         spack_config_home_arg = os.path.expanduser(spack_config_home_arg)
         if os.path.isabs(spack_config_home_arg):

@@ -72,7 +72,7 @@ The following keys are expected but not interpreted specially by this repo:
 - `--repo-dir PATH` (optional): Input repo root
 - `--spack-version X.Y.Z`: Spack version tag used to derive config-home naming (default: `1.1.1`)
 - `--sif-path PATH`: Override SIF location
-- `--spack-config-home PATH` (optional): Defaults to `$HOME/.spack_er_kcl_v<...>`. (Alias: `--spack-config-dir`.)
+- `--spack-config-home PATH` (optional): Defaults to `$HOME/.spack_er_kcl_v<...>`.
 - `--environment-name NAME` (optional): If set (non-blank), `setup.py` creates and uses a Spack environment under `<outputs_dir>/environments/`.
 - `--mode test|development`: Affects the message printed at end (default: development)
 - `--reuse true|false`: Spack concretizer reuse (default: false)

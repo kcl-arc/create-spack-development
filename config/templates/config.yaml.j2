@@ -1,7 +1,7 @@
-# Spack config for user/cloneable spack_er_kcl_v1_1_1
+# Spack config for the user-cloneable {{ spack_config_basename }}
 # install_prefix, source_cache_path from setup script
 config:
-  environments_root: {{ environment_root }}
+  environments_root: {{ envs_dir }}
   install_tree:
     root: {{ install_prefix }}/apps
     projections:
@@ -10,9 +10,12 @@ config:
   template_dirs:
     - {{ install_prefix }}
 
+  # build_stage lives under envs_dir, which every job binds into the container,
+  # so build failures leave a stage/log that is visible from the host on any node,
+  # unlike $tempdir which is the container's private, ephemeral /tmp.
   build_stage:
+    - {{ build_stage_path }}
     - $tempdir/$user/spack-stage
-    - $user_cache_path/stage
 
   test_stage: $user_cache_path/test
   source_cache: {{ source_cache_path }}
@@ -29,8 +32,12 @@ config:
   url_fetch_method: urllib
   ccache: false
   concretizer: clingo
-  db_lock_timeout: 3
-  package_lock_timeout: null
+  # Short lock timeouts produced read-lock failures under concurrent jobs, and
+  # the SPACK_CONFIG_LOCK_TIMEOUT env var previously exported by job templates
+  # is not a real Spack override (did nothing). These keys are the only thing
+  # that governs locking.
+  db_lock_timeout: 300
+  package_lock_timeout: 300
   shared_linking:
     type: rpath
     bind: false

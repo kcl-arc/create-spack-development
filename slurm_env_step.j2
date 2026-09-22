@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Slurm job: {{ step_title }} for Spack environment "{{ environment_name }}" via Singularity.
+# One of the three batch steps (concretize / install / module refresh) driven by
+# spack_concretize.py / spack_pkgs_install.py / spack_mod_refresh.py.
+#
+
+#SBATCH --partition={{ partition }}
+{{ slurm_args }}
+
+export SPACK_USER_CONFIG_PATH={{ spack_user_config_path }}
+
+# Stagger job starts to reduce lock contention when several steps/environments
+# are submitted together.
+sleep $((RANDOM % 60))
+
+ENV_NAME="{{ environment_name }}"
+OUTPUT_FILE="{{ output_file }}"
+STEP="{{ step_id }}"
+START_TIME="$(/usr/bin/date '+%Y-%m-%d %H:%M:%S')"
+
+write_build_result() {
+  local result="$1"
+  cat << EOF > "{{ build_results_dir }}/{{ build_name }}.yaml"
+---
+build_name: "{{ build_name }}"
+step: "${STEP}"
+environment: "${ENV_NAME}"
+start_time: "${START_TIME}"
+end_time: "$(/usr/bin/date '+%Y-%m-%d %H:%M:%S')"
+job_id: ${SLURM_JOB_ID}
+result: ${result}
+output_file: "${OUTPUT_FILE}"
+EOF
+}
+
+singularity_spack() {
+  singularity exec \
+    --env SPACK_USER_CONFIG_PATH={{ spack_user_config_path }} \
+    --bind {{ framework_dir }}:{{ framework_dir }} \
+    --bind {{ repo_dir }}:{{ repo_dir }} \
+    --bind {{ envs_dir }}:{{ envs_dir }} \
+    --bind {{ outputs_dir }}:{{ outputs_dir }} \
+    --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+    "{{ sif_path }}" {{ spack_in_container }} "$@"
+}
+
+fail_step() {
+  local message="$1"
+  echo "ERROR: ${message}" >&2
+  write_build_result 1
+  exit 1
+}
+
+{% if compiler_check %}
+# Concretize and install both need at least one registered compiler; fall back
+# to PATH detection (the container's gcc) if none is registered yet. Idempotent.
+COMPILER_LIST="$(singularity_spack compiler list 2>/dev/null || true)"
+if [[ -z "${COMPILER_LIST// /}" ]]; then
+  echo "No compilers registered; running spack compiler find..."
+  singularity_spack compiler find || fail_step "compiler find failed for ${ENV_NAME}"
+fi
+{% endif %}
+
+{% if step_id == "install" %}
+CPUS_PER_TASK="${SLURM_CPUS_PER_TASK:-1}"
+INSTALL_CONCURRENT_PACKAGES=4
+INSTALL_JOBS=$(( CPUS_PER_TASK / INSTALL_CONCURRENT_PACKAGES > 0 ? CPUS_PER_TASK / INSTALL_CONCURRENT_PACKAGES : 1 ))
+{% endif %}
+
+echo "Running: spack -e ${ENV_NAME} {{ spack_step_args }}"
+singularity_spack -e "${ENV_NAME}" {{ spack_step_args }}
+if [[ "$?" != "0" ]]; then
+  fail_step "{{ step_title }} failed for ${ENV_NAME} (job ${SLURM_JOB_ID}). Output: ${OUTPUT_FILE}"
+fi
+
+write_build_result 0
+echo "{{ step_title }} completed for ${ENV_NAME}."

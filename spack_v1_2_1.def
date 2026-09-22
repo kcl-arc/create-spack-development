@@ -1,0 +1,43 @@
+Bootstrap: docker
+From: almalinux:10
+
+# Spack 1.2.1 container for HPC build jobs on AlmaLinux.
+# Build: sudo singularity build spack_v1_2_1.sif spack_v1_2_1.def
+
+%environment
+  export SPACK_ROOT=/opt/spack
+  export PATH="${SPACK_ROOT}/bin:${PATH}"
+
+%post
+  dnf -y update
+  dnf -y install epel-release
+  dnf -y update
+  
+  dnf -y install --enablerepo=crb \
+    bzip2 \
+    ca-certificates \
+    curl \
+    file \
+    gcc \
+    gcc-c++ \
+    gcc-gfortran \
+    git \
+    lbzip2 \
+    glibc-static \
+    libstdc++-static \
+    make \
+    patch \
+    python3 \
+    python3-pip \
+    tar \
+    unzip \
+    which
+
+  dnf clean all
+  rm -rf /var/cache/dnf
+
+  git clone --depth 3 --branch v1.2.1 https://github.com/spack/spack.git /opt/spack
+  . /opt/spack/share/spack/setup-env.sh
+
+%labels
+  Spack 1.2.1 on AlmaLinux 10

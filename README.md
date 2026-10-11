@@ -1,110 +1,46 @@
 # create-spack-development
 
-User-cloneable Spack environment for creating personal builds or developing packages and environments. Uses a Singularity container at `/software/containers/singularity/spack/spack_v1_2_1.sif` as default, others can be specified during setup.
+User-cloneable setup for personal Spack builds and for developing packages and environments on the HPC. Spack runs in a Singularity container (default `/software/containers/singularity/spack/spack_v1_2_1.sif`; definition files are in this repo).
 
-Singularity definition files are included in the root of this repository.
-
-- **Personal builds**: Maintain your own Spack package recipes and builds on the HPC
-- **Environments**: Use the environment created by setup to create a named Spack environment that can be, e.g. containerised.
-
-Package specs are entered through Spack environments (see below). The `package_installs/<package>.yaml` format is no longer used.
+Environments are git-managed: each `environments/<name>/spack.yaml` is the Spack environment `<name>`.
 
 ## Prerequisites
 
-- Python 3 with jinja2 (`pip install jinja2`)
-- pyyaml (`pip install pyyaml`) for the batch scripts
+Python 3 with `jinja2` and `pyyaml` (`pip install jinja2 pyyaml`).
 
-## Quick start
+## Setup
 
-1. **Clone** (or copy) this repo to a project location, e.g.:
-   ```bash
-   git clone <repo-url> /scratch/prj/my_prj/spack/control/create-spack-development
-   ```
-
-2. **Clone create-spack-packages** next to it and check out the branch you will build against (the default expected by setup is `develop`):
-   ```bash
-   git clone <create-spack-packages-url> /scratch/prj/my_prj/spack/control/create-spack-packages
-   cd /scratch/prj/my_prj/spack/control/create-spack-packages && git checkout develop
-   ```
-
-3. **Run setup** (writes config to `${HOME}/.spack_er_kcl_v1_2_1` by default and creates a default environment `arc-ops-env`):
-   ```bash
-   cd /scratch/prj/my_prj/spack/control/create-spack-development
-   ./setup.py
-   ```
-   If you do not pass `--envs-dir`, `setup.py` defaults to `<repo_parent>/environments/` (e.g. `/scratch/prj/my_prj/spack/control/environments`) and asks for confirmation.
-   If you do not pass `--environment-name`, `setup.py` defaults to `arc-ops-env` and asks for confirmation.
-   `setup.py` requests the branch name to be used for the `create-spack-packages` repo (default `develop`) and warns if your clone is checked out to a different branch (it does not check out for you).
-   If you do not pass `--outputs-dir`, `setup.py` defaults to `<repo_parent>/../installs/` (e.g. `/scratch/prj/my_prj/spack/installs/`) and asks for confirmation.
-
-4. **Add specs** to the environment: edit `<envs_dir>/arc-ops-env/spack.yaml` (see the minimal example below) or copy a manifest from `create-spack-environments`.
-
-5. **Batch submit** (each step submits one Slurm job; defaults to `arc-ops-env`, add `-e <env-name>` for another):
-   ```bash
-   ./spack_concretize.py                  # spack -e arc-ops-env concretize -f
-   ./spack_pkgs_install.py                # spack -e arc-ops-env install
-   ./spack_mod_refresh.py                 # spack -e arc-ops-env module tcl refresh -y
-   ```
-   Chain the steps in order with `--wait`:
-   ```bash
-   ./spack_concretize.py --wait && ./spack_pkgs_install.py --wait && ./spack_mod_refresh.py
-   ```
-
-## Minimal environment example
-
-`setup.py` creates the environment empty. Add root specs under `specs:` in `<envs_dir>/<env-name>/spack.yaml`:
-
-```yaml
-spack:
-  specs:
-  - zlib@1.3
-  view: false
-  concretizer:
-    unify: false
-    reuse: false
+```bash
+cd /scratch/prj/my_prj/spack/control
+git clone <create-spack-development-url>
+git clone <create-spack-packages-url>         # setup expects branch develop by default
+cd create-spack-development
+./setup.py                                      # prompts; Enter accepts the default
+./setup.py -y                                   # later re-runs: reuse the saved answers
 ```
 
-The rendered manifest already carries the per-env install tree (`<outputs_dir>/<env-name>/apps`) and module root (`<outputs_dir>/<env-name>/modules`); you normally only edit `specs:`.
+## Environments
 
-For complete examples (per-arch targets, providers, CUDA), see the manifests in [create-spack-environments](https://github.com/kcl-eresearch/create-spack-environments) (`environments/bespoke/`, `environments/generated/`).
+```bash
+git switch -c my-envs                           # keep your environments on your own branch
+./new_env.py my-env --constraint zen3           # blank environment; constraint goes in meta.yaml
+./new_env.py my-env --from ../create-spack-environments/environments/bespoke/arc-zen3-cpu   # or copy one
+# add specs under specs: in environments/my-env/spack.yaml
+git add environments/my-env && git commit -m "my-env: add specs"
+```
 
-## Directory layout
+Rules for `spack.yaml` (checked before every build):
 
-| Purpose | Location |
-|---------|----------|
-| Spack config | `${HOME}/.spack_er_kcl_v1_2_1/` (written by setup) |
-| Repo clone | Your choice (e.g. `/scratch/prj/my_prj/spack/control/create-spack-development`) |
-| local_packages | `<repo_parent>/create-spack-packages/local_packages/spack_repo/kcl/packages/<pkg>/package.py` |
-| Environment manifests | `<envs_dir>/<environment_name>/spack.yaml` |
-| source_cache | `<envs_dir>/source_cache/` |
-| build_results | `<envs_dir>/build_results/` |
-| Setup state | `<envs_dir>/setup_state.yaml` |
-| Install output | `<repo_parent>/../installs/<environment_name>/` (`apps/`, `modules/`) |
+- keep `include: [paths.yaml]` (generated, gitignored; sets the install tree and module root)
+- don't set `config: install_tree` or `modules: <set>: roots`
 
-## Setup options
+```bash
+git add -f environments/my-env/spack.lock       # optional: keep the concretized lock (ignored by default)
+```
 
-- `--outputs-dir PATH` (optional): Output root. Defaults to `<repo_parent>/../installs`.
-- `--repo-dir PATH` (optional): create-spack-packages checkout (defaults to `<repo_parent>/create-spack-packages`).
-- `--spack-version X.Y.Z`: Spack version tag used to derive config-home naming (default: `1.2.1`)
-- `--sif-path PATH`: Override SIF location
-- `--spack-config-home PATH` (optional): Defaults to `${HOME}/.spack_er_kcl_v<...>`.
-- `--envs-dir PATH` (optional): Defaults to `<repo_parent>/environments/`.
-- `--environment-name <environment_name>`: Defaults to `arc-ops-env`. `setup.py` writes the environment `spack.yaml` in `<envs_dir>/<environment_name>`; `apps/` and `modules/` are written under `<outputs_dir>/<environment_name>/`.
-- `--packages-branch <branch>`: create-spack-packages branch to record (default: `develop`); setup warns if the clone is on a different branch.
-- `--mode test|development`: Affects the message printed at end (default: development)
-- `--reuse true|false`: Spack concretizer reuse (default: false)
+To promote an environment to `create-spack-environments`, copy `spack.yaml` (and `meta.yaml`) to `environments/bespoke/<name>/` there, remove the `include:` line and add the production `modules: default: roots: tcl:`.
 
-`setup.py` writes `setup_state.yaml` in `<envs_dir>/`. `spack_concretize.py`, `spack_pkgs_install.py` and `spack_mod_refresh.py` use it to pick defaults for paths, `SPACK_USER_CONFIG_PATH`, and environment selection.
-
-Running `setup.py` with a new environment name adds the new environment to the current setup (existing directories and config files are kept).
-
-## Clone and rename
-
-You can clone this repo, rename it, and push to your own GitHub/GitLab. `setup.py` infers the repo inputs from the directory containing this `setup.py`, so the name does not need to match.
-
-## Using a different create-spack-packages branch for one environment
-
-All environments use the one `create-spack-packages` checkout recorded at setup. To build one environment against a different branch, check that branch out in a second clone and override `repos:` in that environment's `spack.yaml` (the key must match the one in `<spack-config-home>/repos.yaml`, so it replaces rather than adds):
+To build one environment against another `create-spack-packages` branch, clone it again and override `repos:` in that `spack.yaml` (a user-specific path, so keep it on your own branch):
 
 ```yaml
 spack:
@@ -112,54 +48,51 @@ spack:
     local_packages: /scratch/prj/my_prj/spack/control/create-spack-packages-feature/local_packages/spack_repo/kcl
 ```
 
-Per-env install trees (the default here) keep such experiments isolated: `rm -rf <outputs_dir>/<environment_name>` removes everything the environment ever wrote.
+## Build
 
-## Interactively submit
+Run from a login node; the scripts submit their own Slurm jobs (don't `sbatch` them).
 
-1. **Set environment**:
-   ```bash
-   export SPACK_USER_CONFIG_PATH=${HOME}/.spack_er_kcl_v1_2_1
-   ```
+```bash
+./spack_build.py -e my-env                      # concretize -> install -> module refresh, chained
+./spack_concretize.py -e my-env                 # single steps: also spack_pkgs_install.py, spack_mod_refresh.py
+./spack_build.py -e env-a -e env-b              # several environments (or --all)
+./spack_build.py -e my-env -- --ntasks=8 --mem-per-cpu=8192   # extra sbatch options
+./spack_build.py -e my-env --dry-run            # print the sbatch commands and job scripts
+```
 
-2. **Interactive Spack shell** (use `srun` for an interactive session):
-   ```bash
-   srun -p interruptible_cpu --nodes=1 --ntasks=4 --cpus-per-task=1 --mem-per-cpu=4096 --constraint=zen3 --pty /bin/bash -l
-   ```
-   The recommended commands are also in `instructions.md` (generated by `setup.py`):
-   ```bash
-   export SPACK_USER_CONFIG_PATH=${HOME}/.spack_er_kcl_v1_2_1
-   singularity shell \
-      --env SPACK_USER_CONFIG_PATH="${SPACK_USER_CONFIG_PATH}" \
-      --bind "/scratch/prj/my_prj/spack/control/create-spack-development:/scratch/prj/my_prj/spack/control/create-spack-development" \
-      --bind "/scratch/prj/my_prj/spack/control/create-spack-packages:/scratch/prj/my_prj/spack/control/create-spack-packages" \
-      --bind "/scratch/prj/my_prj/spack/control/environments:/scratch/prj/my_prj/spack/control/environments" \
-      --bind "/scratch/prj/my_prj/spack/installs:/scratch/prj/my_prj/spack/installs" \
-      --bind "${SPACK_USER_CONFIG_PATH}:${SPACK_USER_CONFIG_PATH}" \
-      "/software/containers/singularity/spack/spack_v1_2_1.sif"
-   ```
+`-e` can be left out when there is only one environment. `--constraint` defaults to `constraint` in `meta.yaml`. Logs and build results (with commits of both repos): `var/build_results/`.
 
-3. **Manage the environment inside the shell**:
-   ```bash
-   source /opt/spack/share/spack/setup-env.sh   # needed for env activate/deactivate
-   spack env list
-   spack -e arc-ops-env add 'zlib@1.3'
-   spack -e arc-ops-env spec
-   spack -e arc-ops-env concretize -f
-   spack -e arc-ops-env install
-   spack -e arc-ops-env module tcl refresh -y
-   spack -e arc-ops-env find
-   spack env activate arc-ops-env
-   spack env deactivate
-   spack repo list
-   ```
+## Shell
+
+```bash
+./spack_shell.py -e my-env                      # srun + container shell, environment active
+./spack_shell.py -e my-env -- --time=4:00:00    # extra srun options
+```
 
 ## Modules
 
-This setup installs tcl modules in `<outputs_dir>/<environment_name>/modules/`
-
-To make the modules available to be loaded, set the environment variable `MODULEPATH`:
-
 ```bash
-export MODULEPATH=/scratch/prj/my_prj/spack/installs/arc-ops-env/modules:$MODULEPATH
+export MODULEPATH=/scratch/prj/my_prj/spack/installs/my-env/modules:${MODULEPATH}
 module avail
 ```
+
+## Setup options
+
+- `--repo-dir PATH`: create-spack-packages clone (default `<repo_parent>/create-spack-packages`)
+- `--packages-branch BRANCH`: branch expected in that clone (default `develop`; warns if different)
+- `--outputs-dir PATH`: installs and modules go to `<outputs-dir>/<env>/apps` and `.../modules` (default `<repo_parent>/../installs`)
+- `--spack-version X.Y.Z`: default `1.2.1`
+- `--sif-path PATH`: container image
+- `--spack-config-home PATH`: default `${HOME}/.spack_er_kcl_v1_2_1`
+- `-y`, `--yes`: no prompts; use the saved (or default) values
+
+## Layout
+
+| What | Where |
+|------|-------|
+| Environments (tracked) | `environments/<env>/spack.yaml`, optional `meta.yaml` |
+| Generated per environment (ignored) | `environments/<env>/paths.yaml`, `spack.lock`, `.spack-env/` |
+| Setup state, caches, logs (ignored) | `var/` |
+| Generated commands (ignored) | `instructions.md` |
+| Installs, modules | `<outputs-dir>/<env>/apps`, `<outputs-dir>/<env>/modules` |
+| Spack config | `${HOME}/.spack_er_kcl_v1_2_1/` |

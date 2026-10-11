@@ -1,0 +1,101 @@
+spack:
+  include:
+  - paths.yaml
+  view: false
+  concretizer:
+    unify: false
+    reuse: false
+  modules:
+    default:
+      tcl:
+        hide_implicits: true
+        exclude:
+        - gcc-runtime
+        - glibc
+        hash_length: 0
+        naming_scheme: '{name}/{version}'
+        projections:
+          all: '{name}/{version}'
+          ^mpi: '{name}/{version}-{^mpi.name}_{^mpi.version}'
+          ^hwloc: '{name}/{version}-hwloc_{^hwloc.version}'
+          ^llvm: '{name}/{version}-{^llvm.name}_{^llvm.version}'
+          ^python: '{name}/{version}-{^python.name}_{^python.version}'
+          threads=openmp: '{name}/{version}-omp'
+      enable:
+      - tcl
+  packages:
+    all:
+      require:
+      - target=zen3
+    c:
+      require:
+      - any_of:
+        - gcc target=zen3
+        - nvhpc target=zen3
+      prefer:
+      - gcc@12.5.0
+    cxx:
+      require:
+      - any_of:
+        - gcc target=zen3
+        - nvhpc target=zen3
+      prefer:
+      - gcc@12.5.0
+    fortran:
+      require:
+      - any_of:
+        - gcc target=zen3
+        - nvhpc target=zen3
+      prefer:
+      - gcc@12.5.0
+    llvm:
+      require: target=zen3
+      version:
+      - 15.0.7
+    clang:
+      require: target=zen3
+      version:
+      - 15.0.7
+    intel-oneapi-compilers:
+      require: target=zen3
+    boost:
+      require: '@1.77: target=zen3'
+    libxml2:
+      require: '@2.13.9 target=zen3'
+    petsc:
+      require: +batch target=zen3
+    mctc-lib:
+      require: '@0.5.1: target=zen3'
+    xtb:
+      require: ~tblite target=zen3
+    curl:
+      require: +libidn2 target=zen3
+    openmpi:
+      require:
+      - target=zen3
+    r:
+      require:
+      - target=zen3
+    node-js:
+      require: '@:22 target=zen3'
+    gcc:
+      externals:
+      - spec: gcc@14.3.1 target=zen3 languages:='c,c++,fortran'
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/gcc
+            cxx: /usr/bin/g++
+            fortran: /usr/bin/gfortran
+      # - spec: gcc@12.5.0 target=zen3 languages:='c,c++,fortran'
+      #   prefix: /software/spack_v1_2_1/install/apps/linux-almalinux10-zen3/gcc-14.3.1/gcc-12.5.0-gugdkwubwh3fpeirqhnhvbvxfjryube4
+      #   extra_attributes:
+      #     compilers:
+      #       c: /software/spack_v1_2_1/install/apps/linux-almalinux10-zen3/gcc-14.3.1/gcc-12.5.0-gugdkwubwh3fpeirqhnhvbvxfjryube4/bin/gcc
+      #       cxx: /software/spack_v1_2_1/install/apps/linux-almalinux10-zen3/gcc-14.3.1/gcc-12.5.0-gugdkwubwh3fpeirqhnhvbvxfjryube4/bin/g++
+      #       fortran: /software/spack_v1_2_1/install/apps/linux-almalinux10-zen3/gcc-14.3.1/gcc-12.5.0-gugdkwubwh3fpeirqhnhvbvxfjryube4/bin/gfortran
+    cuda:
+      buildable: false
+  specs:
+  - gcc@12.5.0
+  - curl

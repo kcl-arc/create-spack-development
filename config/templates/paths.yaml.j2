@@ -1,0 +1,11 @@
+# Generated for Spack environment "{{ environment_name }}" by create-spack-development.
+# Don't edit or commit: setup.py and the build/shell scripts rewrite it from
+# var/setup_state.yaml. Included by environments/{{ environment_name }}/spack.yaml.
+# rm -rf {{ env_install_root }} removes everything the environment ever wrote.
+config:
+  install_tree:
+    root: {{ env_install_root }}/apps
+modules:
+  default:
+    roots:
+      tcl: {{ env_install_root }}/modules

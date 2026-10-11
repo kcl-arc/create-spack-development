@@ -1,6 +1,6 @@
-# Concretizer config; reuse from setup script (default false)
+# Concretizer config; each environment's spack.yaml sets its own reuse/unify.
 concretizer:
-  reuse: {{ reuse }}
+  reuse: false
   targets:
     granularity: microarchitectures
     host_compatible: true

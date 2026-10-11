@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-Submit a Slurm job to install a Spack environment:
+Submit a Slurm job to install Spack environment(s):
 spack -e <env> install --yes-to-all -p 4 -j <cpus/4>.
 
-Reads <envs_dir>/setup_state.yaml (written by setup.py) for defaults.
+Run directly (not via sbatch). Reads var/setup_state.yaml (written by setup.py).
 """
 
-from er_spack_common import build_step_parser, submit_step
+import sys
+
+try:
+    from er_spack_common import build_step_parser, parse_args, run_steps
+except ModuleNotFoundError as e:
+    if e.name != "er_spack_common":
+        raise
+    sys.exit(
+        "Cannot import er_spack_common. Run this script directly from the "
+        "create-spack-development checkout; it submits its own Slurm jobs, so "
+        "don't submit it with sbatch."
+    )
 
 
 def main():
-    parser = build_step_parser("Install a Spack environment (spack install) via Slurm")
-    args = parser.parse_args()
-    submit_step(
-        args,
-        step_id="install",
-        step_title="Install",
-        spack_step_args="install --yes-to-all -p ${INSTALL_CONCURRENT_PACKAGES} -j ${INSTALL_JOBS}",
-        compiler_check=True,
-    )
+    parser = build_step_parser("Install Spack environment(s) (spack install) via Slurm")
+    args = parse_args(parser)
+    run_steps(args, ["install"])
 
 
 if __name__ == "__main__":

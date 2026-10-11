@@ -2,11 +2,13 @@
 #
 # Slurm job: {{ step_title }} for Spack environment "{{ environment_name }}" via Singularity.
 # One of the three batch steps (concretize / install / module refresh) driven by
-# spack_concretize.py / spack_pkgs_install.py / spack_mod_refresh.py.
+# spack_build.py, or singly by spack_concretize.py / spack_pkgs_install.py /
+# spack_mod_refresh.py. sbatch options given after '--' override these defaults.
 #
 
 #SBATCH --partition={{ partition }}
-{{ slurm_args }}
+#SBATCH --ntasks=4
+#SBATCH --mem-per-cpu=4096
 
 export SPACK_USER_CONFIG_PATH={{ spack_user_config_path }}
 
@@ -31,17 +33,25 @@ end_time: "$(/usr/bin/date '+%Y-%m-%d %H:%M:%S')"
 job_id: ${SLURM_JOB_ID}
 result: ${result}
 output_file: "${OUTPUT_FILE}"
+# Recorded at submit time.
+create_spack_development:
+  commit: "{{ dev_git.commit }}"
+  branch: "{{ dev_git.branch }}"
+  environment_dirty: {{ dev_git.dirty }}
+create_spack_packages:
+  commit: "{{ packages_git.commit }}"
+  branch: "{{ packages_git.branch }}"
+  dirty: {{ packages_git.dirty }}
 EOF
 }
 
 singularity_spack() {
   singularity exec \
     --env SPACK_USER_CONFIG_PATH={{ spack_user_config_path }} \
-    --bind {{ framework_dir }}:{{ framework_dir }} \
-    --bind {{ repo_dir }}:{{ repo_dir }} \
-    --bind {{ envs_dir }}:{{ envs_dir }} \
-    --bind {{ outputs_dir }}:{{ outputs_dir }} \
-    --bind {{ spack_user_config_path }}:{{ spack_user_config_path }} \
+{% for bind in binds %}
+    --bind {{ bind }}:{{ bind }} \
+{% endfor %}
+    --pwd {{ dev_repo_dir }} \
     "{{ sif_path }}" {{ spack_in_container }} "$@"
 }
 

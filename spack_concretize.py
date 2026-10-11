@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-Submit a Slurm job to concretize a Spack environment:
+Submit a Slurm job to concretize Spack environment(s):
 spack -e <env> concretize -f (always forced, for determinism).
 
-Reads <envs_dir>/setup_state.yaml (written by setup.py) for defaults.
+Run directly (not via sbatch). Reads var/setup_state.yaml (written by setup.py).
 """
 
-from er_spack_common import build_step_parser, submit_step
+import sys
+
+try:
+    from er_spack_common import build_step_parser, parse_args, run_steps
+except ModuleNotFoundError as e:
+    if e.name != "er_spack_common":
+        raise
+    sys.exit(
+        "Cannot import er_spack_common. Run this script directly from the "
+        "create-spack-development checkout; it submits its own Slurm jobs, so "
+        "don't submit it with sbatch."
+    )
 
 
 def main():
-    parser = build_step_parser("Concretize a Spack environment (spack concretize -f) via Slurm")
-    args = parser.parse_args()
-    submit_step(
-        args,
-        step_id="concretize",
-        step_title="Concretize",
-        spack_step_args="concretize -f",
-        compiler_check=True,
-    )
+    parser = build_step_parser("Concretize Spack environment(s) (spack concretize -f) via Slurm")
+    args = parse_args(parser)
+    run_steps(args, ["concretize"])
 
 
 if __name__ == "__main__":

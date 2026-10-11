@@ -82,7 +82,7 @@ module avail
 - `--packages-branch BRANCH`: branch expected in that clone (default `develop`; warns if different)
 - `--outputs-dir PATH`: installs and modules go to `<outputs-dir>/<env>/apps` and `.../modules` (default `<repo_parent>/../installs`)
 - `--spack-version X.Y.Z`: default `1.2.1`
-- `--sif-path PATH`: container image
+- `--sif-path PATH`: container image (default `/software/containers/singularity/spack/spack_v1_2_1.sif`)
 - `--spack-config-home PATH`: default `${HOME}/.spack_er_kcl_v1_2_1`
 - `-y`, `--yes`: no prompts; use the saved (or default) values
 

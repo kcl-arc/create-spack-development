@@ -1,5 +1,7 @@
 # Spack config for the user-cloneable {{ spack_config_basename }}
 # install_prefix, source_cache_path from setup script
+# environments_root is the repo's git-managed environments/ dir: each
+# environments/<name>/spack.yaml is the Spack environment <name>.
 config:
   environments_root: {{ envs_dir }}
   install_tree:
@@ -10,7 +12,7 @@ config:
   template_dirs:
     - {{ install_prefix }}
 
-  # build_stage lives under envs_dir, which every job binds into the container,
+  # build_stage lives under the repo's var/, which every job binds into the container,
   # so build failures leave a stage/log that is visible from the host on any node,
   # unlike $tempdir which is the container's private, ephemeral /tmp.
   build_stage:

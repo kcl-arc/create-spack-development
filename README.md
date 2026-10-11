@@ -1,6 +1,6 @@
-# er-spack-development
+# create-spack-development
 
-User-cloneable Spack environment for creating personal builds or developing environments. Uses a Singularity container at `/software/containers/singularity/spack/spack_v1_2_1.sif` as default, others can be specified during setup.
+User-cloneable Spack environment for creating personal builds or developing packages and environments. Uses a Singularity container at `/software/containers/singularity/spack/spack_v1_2_1.sif` as default, others can be specified during setup.
 
 Singularity definition files are included in the root of this repository.
 
@@ -18,26 +18,26 @@ Package specs are entered through Spack environments (see below). The `package_i
 
 1. **Clone** (or copy) this repo to a project location, e.g.:
    ```bash
-   git clone <repo-url> /scratch/prj/my_prj/spack/control/er-spack-development
+   git clone <repo-url> /scratch/prj/my_prj/spack/control/create-spack-development
    ```
 
-2. **Clone er-spack-packages** next to it and check out the branch you will build against (the default expected by setup is `develop`):
+2. **Clone create-spack-packages** next to it and check out the branch you will build against (the default expected by setup is `develop`):
    ```bash
-   git clone <er-spack-packages-url> /scratch/prj/my_prj/spack/control/er-spack-packages
-   cd /scratch/prj/my_prj/spack/control/er-spack-packages && git checkout develop
+   git clone <create-spack-packages-url> /scratch/prj/my_prj/spack/control/create-spack-packages
+   cd /scratch/prj/my_prj/spack/control/create-spack-packages && git checkout develop
    ```
 
 3. **Run setup** (writes config to `${HOME}/.spack_er_kcl_v1_2_1` by default and creates a default environment `arc-ops-env`):
    ```bash
-   cd /scratch/prj/my_prj/spack/control/er-spack-development
+   cd /scratch/prj/my_prj/spack/control/create-spack-development
    ./setup.py
    ```
    If you do not pass `--envs-dir`, `setup.py` defaults to `<repo_parent>/environments/` (e.g. `/scratch/prj/my_prj/spack/control/environments`) and asks for confirmation.
    If you do not pass `--environment-name`, `setup.py` defaults to `arc-ops-env` and asks for confirmation.
-   `setup.py` requests the branch name to be used for the `er-spack-packages` repo (default `develop`) and warns if your clone is checked out to a different branch (it does not check out for you).
+   `setup.py` requests the branch name to be used for the `create-spack-packages` repo (default `develop`) and warns if your clone is checked out to a different branch (it does not check out for you).
    If you do not pass `--outputs-dir`, `setup.py` defaults to `<repo_parent>/../installs/` (e.g. `/scratch/prj/my_prj/spack/installs/`) and asks for confirmation.
 
-4. **Add specs** to the environment: edit `<envs_dir>/arc-ops-env/spack.yaml` (see the minimal example below) or copy a manifest from `er-spack-environments`.
+4. **Add specs** to the environment: edit `<envs_dir>/arc-ops-env/spack.yaml` (see the minimal example below) or copy a manifest from `create-spack-environments`.
 
 5. **Batch submit** (each step submits one Slurm job; defaults to `arc-ops-env`, add `-e <env-name>` for another):
    ```bash
@@ -66,15 +66,15 @@ spack:
 
 The rendered manifest already carries the per-env install tree (`<outputs_dir>/<env-name>/apps`) and module root (`<outputs_dir>/<env-name>/modules`); you normally only edit `specs:`.
 
-For complete examples (per-arch targets, providers, CUDA), see the manifests in [er-spack-environments](https://github.com/kcl-eresearch/er-spack-environments) (`environments/bespoke/`, `environments/generated/`).
+For complete examples (per-arch targets, providers, CUDA), see the manifests in [create-spack-environments](https://github.com/kcl-eresearch/create-spack-environments) (`environments/bespoke/`, `environments/generated/`).
 
 ## Directory layout
 
 | Purpose | Location |
 |---------|----------|
 | Spack config | `${HOME}/.spack_er_kcl_v1_2_1/` (written by setup) |
-| Repo clone | Your choice (e.g. `/scratch/prj/my_prj/spack/control/er-spack-development`) |
-| local_packages | `<repo_parent>/er-spack-packages/local_packages/spack_repo/kcl/packages/<pkg>/package.py` |
+| Repo clone | Your choice (e.g. `/scratch/prj/my_prj/spack/control/create-spack-development`) |
+| local_packages | `<repo_parent>/create-spack-packages/local_packages/spack_repo/kcl/packages/<pkg>/package.py` |
 | Environment manifests | `<envs_dir>/<environment_name>/spack.yaml` |
 | source_cache | `<envs_dir>/source_cache/` |
 | build_results | `<envs_dir>/build_results/` |
@@ -84,13 +84,13 @@ For complete examples (per-arch targets, providers, CUDA), see the manifests in 
 ## Setup options
 
 - `--outputs-dir PATH` (optional): Output root. Defaults to `<repo_parent>/../installs`.
-- `--repo-dir PATH` (optional): er-spack-packages checkout (defaults to `<repo_parent>/er-spack-packages`).
+- `--repo-dir PATH` (optional): create-spack-packages checkout (defaults to `<repo_parent>/create-spack-packages`).
 - `--spack-version X.Y.Z`: Spack version tag used to derive config-home naming (default: `1.2.1`)
 - `--sif-path PATH`: Override SIF location
 - `--spack-config-home PATH` (optional): Defaults to `${HOME}/.spack_er_kcl_v<...>`.
 - `--envs-dir PATH` (optional): Defaults to `<repo_parent>/environments/`.
 - `--environment-name <environment_name>`: Defaults to `arc-ops-env`. `setup.py` writes the environment `spack.yaml` in `<envs_dir>/<environment_name>`; `apps/` and `modules/` are written under `<outputs_dir>/<environment_name>/`.
-- `--packages-branch <branch>`: er-spack-packages branch to record (default: `develop`); setup warns if the clone is on a different branch.
+- `--packages-branch <branch>`: create-spack-packages branch to record (default: `develop`); setup warns if the clone is on a different branch.
 - `--mode test|development`: Affects the message printed at end (default: development)
 - `--reuse true|false`: Spack concretizer reuse (default: false)
 
@@ -102,14 +102,14 @@ Running `setup.py` with a new environment name adds the new environment to the c
 
 You can clone this repo, rename it, and push to your own GitHub/GitLab. `setup.py` infers the repo inputs from the directory containing this `setup.py`, so the name does not need to match.
 
-## Using a different er-spack-packages branch for one environment
+## Using a different create-spack-packages branch for one environment
 
-All environments use the one `er-spack-packages` checkout recorded at setup. To build one environment against a different branch, check that branch out in a second clone and override `repos:` in that environment's `spack.yaml` (the key must match the one in `<spack-config-home>/repos.yaml`, so it replaces rather than adds):
+All environments use the one `create-spack-packages` checkout recorded at setup. To build one environment against a different branch, check that branch out in a second clone and override `repos:` in that environment's `spack.yaml` (the key must match the one in `<spack-config-home>/repos.yaml`, so it replaces rather than adds):
 
 ```yaml
 spack:
   repos:
-    local_packages: /scratch/prj/my_prj/spack/control/er-spack-packages-feature/local_packages/spack_repo/kcl
+    local_packages: /scratch/prj/my_prj/spack/control/create-spack-packages-feature/local_packages/spack_repo/kcl
 ```
 
 Per-env install trees (the default here) keep such experiments isolated: `rm -rf <outputs_dir>/<environment_name>` removes everything the environment ever wrote.
@@ -130,8 +130,8 @@ Per-env install trees (the default here) keep such experiments isolated: `rm -rf
    export SPACK_USER_CONFIG_PATH=${HOME}/.spack_er_kcl_v1_2_1
    singularity shell \
       --env SPACK_USER_CONFIG_PATH="${SPACK_USER_CONFIG_PATH}" \
-      --bind "/scratch/prj/my_prj/spack/control/er-spack-development:/scratch/prj/my_prj/spack/control/er-spack-development" \
-      --bind "/scratch/prj/my_prj/spack/control/er-spack-packages:/scratch/prj/my_prj/spack/control/er-spack-packages" \
+      --bind "/scratch/prj/my_prj/spack/control/create-spack-development:/scratch/prj/my_prj/spack/control/create-spack-development" \
+      --bind "/scratch/prj/my_prj/spack/control/create-spack-packages:/scratch/prj/my_prj/spack/control/create-spack-packages" \
       --bind "/scratch/prj/my_prj/spack/control/environments:/scratch/prj/my_prj/spack/control/environments" \
       --bind "/scratch/prj/my_prj/spack/installs:/scratch/prj/my_prj/spack/installs" \
       --bind "${SPACK_USER_CONFIG_PATH}:${SPACK_USER_CONFIG_PATH}" \

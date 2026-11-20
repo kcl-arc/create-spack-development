@@ -4,6 +4,8 @@ User-cloneable setup for personal Spack builds and for developing packages and e
 
 Environments are git-managed: each `environments/<name>/spack.yaml` is the Spack environment `<name>`.
 
+Defaults are set for typical paths on KCL ARC CREATE HPC, easy enough to edit to make work on any system.
+
 ## Prerequisites
 
 Python 3 with `jinja2` and `pyyaml` (`pip install jinja2 pyyaml`).
